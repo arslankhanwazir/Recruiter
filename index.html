@@ -2,77 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AZKY Screener</title>
+    <title>Vertex AI Discovery Simulator</title>
     <style>
-        body { font-family: sans-serif; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: #1a1a1a; padding: 30px; border-radius: 8px; width: 400px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; background: #333; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        #status { margin-top: 20px; font-size: 0.9em; color: #aaa; }
+        body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; background: #121212; color: white; }
+        #left-panel { width: 300px; padding: 20px; border-right: 1px solid #333; text-align: center; }
+        #center-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #right-panel { width: 300px; padding: 20px; border-left: 1px solid #333; }
+        #ai-avatar { width: 150px; border-radius: 50%; border: 4px solid #555; }
+        .listening { border-color: red !important; box-shadow: 0 0 15px red; }
+        .speaking { border-color: blue !important; box-shadow: 0 0 15px blue; }
+        video { width: 100%; max-width: 500px; background: #000; }
+        textarea { width: 100%; height: 80%; background: #222; color: white; border: 1px solid #444; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>AZKY Screener</h2>
-        <div id="setup">
-            <input type="text" id="name" placeholder="Full name">
-            <input type="text" id="code" placeholder="Interview code">
-            <button onclick="startInterview()">Start Interview</button>
-        </div>
-        <div id="active" style="display:none;">
-            <p>Interview in progress...</p>
-            <button onclick="stopInterview()" style="background: #dc3545;">Terminate Call</button>
-        </div>
-        <div id="status"></div>
-    </div>
 
-    <script>
+<div id="left-panel">
+    <img id="ai-avatar" src="https://via.placeholder.com/150" alt="Danny Cole">
+    <h2>Danny Cole</h2>
+    <p>Travel Agency Owner</p>
+    <div id="status">● Status: Idle</div>
+</div>
+
+<div id="center-panel">
+    <video id="candidate-video" autoplay playsinline></video>
+    <div style="margin-top: 20px;">
+        <button onclick="startInterview()">Start Interview</button>
+        <button onclick="submitInterview()">Terminate Call</button>
+    </div>
+</div>
+
+<div id="right-panel">
+    <h3>Notes</h3>
+    <textarea id="notepad" placeholder="Note down business bottlenecks here..."></textarea>
+</div>
+
+<script>
+    let stream;
+    const webhookUrl = 'https://stitchlabai.space/webhook/interview-submitted';
+
+    async function startInterview() {
+        // 1. Get Camera/Mic
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('candidate-video').srcObject = stream;
+        document.getElementById('status').innerText = "● Status: Live";
+        
+        // 2. Initialize Web Speech API for Mock Call
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.continuous = true;
-        recognition.interimResults = true;
-        
-        let transcript = [];
-        const webhookUrl = 'https://stitchlabai.space/webhook/interview-submitted';
+        recognition.onstart = () => document.getElementById('ai-avatar').className = 'listening';
+        recognition.onend = () => document.getElementById('ai-avatar').className = 'speaking';
+        recognition.start();
+    }
 
-        recognition.onresult = (event) => {
-            let currentTranscript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                currentTranscript += event.results[i][0].transcript;
-            }
-            transcript = [currentTranscript]; 
+    async function submitInterview() {
+        const payload = {
+            candidateName: "Candidate Name", // In production, add an input field for this
+            candidateNotes: document.getElementById('notepad').value,
+            transcript: "Mock transcript data..." // Captured from recognition
         };
 
-        function startInterview() {
-            const name = document.getElementById('name').value;
-            if(!name) return alert("Enter name");
-            
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('active').style.display = 'block';
-            recognition.start();
-        }
-
-        async function stopInterview() {
-            recognition.stop();
-            document.getElementById('status').innerText = "Analyzing...";
-
-            const payload = {
-                candidateName: document.getElementById('name').value,
-                candidateNotes: "Candidate completed mock discovery call.",
-                transcript: transcript
-            };
-
-            try {
-                await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                document.getElementById('status').innerText = "Interview submitted! Scorecard will be emailed.";
-            } catch (e) {
-                document.getElementById('status').innerText = "Error submitting: " + e.message;
-            }
-        }
-    </script>
+        await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        alert("Interview Submitted for Evaluation.");
+    }
+</script>
 </body>
 </html>
