@@ -2,72 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vertex AI Discovery Simulator</title>
+    <title>Vertex Traders - Hiring Pipeline</title>
     <style>
-        body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; background: #121212; color: white; }
-        #left-panel { width: 300px; padding: 20px; border-right: 1px solid #333; text-align: center; }
+        body { margin: 0; font-family: sans-serif; background: #0a0a0a; color: white; display: flex; height: 100vh; }
+        
+        /* Left: Persona */
+        #left-panel { width: 300px; padding: 20px; border-right: 1px solid #333; background: #111; }
+        #ai-avatar { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #333; margin-bottom: 10px; }
+        .live-dot { height: 12px; width: 12px; background-color: #4CAF50; border-radius: 50%; display: inline-block; }
+        .glow { box-shadow: 0 0 15px blue; border-color: blue !important; }
+
+        /* Center: Webcam */
         #center-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #right-panel { width: 300px; padding: 20px; border-left: 1px solid #333; }
-        #ai-avatar { width: 150px; border-radius: 50%; border: 4px solid #555; }
-        .listening { border-color: red !important; box-shadow: 0 0 15px red; }
-        .speaking { border-color: blue !important; box-shadow: 0 0 15px blue; }
-        video { width: 100%; max-width: 500px; background: #000; }
-        textarea { width: 100%; height: 80%; background: #222; color: white; border: 1px solid #444; }
+        #candidate-video { width: 70%; border-radius: 10px; border: 2px solid #444; background: #000; }
+
+        /* Right: Notes */
+        #right-panel { width: 300px; padding: 20px; border-left: 1px solid #333; background: #111; }
+        textarea { width: 100%; height: 70%; background: #000; color: #0f0; border: 1px solid #333; padding: 10px; font-family: monospace; }
     </style>
 </head>
 <body>
 
 <div id="left-panel">
-    <img id="ai-avatar" src="https://via.placeholder.com/150" alt="Danny Cole">
+    <img id="ai-avatar" src="danny.jpg" alt="Danny Cole">
     <h2>Danny Cole</h2>
-    <p>Travel Agency Owner</p>
-    <div id="status">● Status: Idle</div>
+    <p><strong>Travel Agency Owner</strong></p>
+    <p><span class="live-dot"></span> Status: Live</p>
+    <p style="font-size: 0.9em; color: #888;">"I need to automate my travel bookings and emails. Everything is currently manual."</p>
 </div>
 
 <div id="center-panel">
     <video id="candidate-video" autoplay playsinline></video>
     <div style="margin-top: 20px;">
         <button onclick="startInterview()">Start Interview</button>
-        <button onclick="submitInterview()">Terminate Call</button>
+        <button onclick="submitInterview()">Terminate & Analyze</button>
     </div>
 </div>
 
 <div id="right-panel">
     <h3>Notes</h3>
-    <textarea id="notepad" placeholder="Note down business bottlenecks here..."></textarea>
+    <textarea id="notepad" placeholder="Identify business bottlenecks here..."></textarea>
 </div>
 
 <script>
-    let stream;
-    const webhookUrl = 'https://stitchlabai.space/webhook/interview-submitted';
-
     async function startInterview() {
-        // 1. Get Camera/Mic
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // Access Camera
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         document.getElementById('candidate-video').srcObject = stream;
-        document.getElementById('status').innerText = "● Status: Live";
-        
-        // 2. Initialize Web Speech API for Mock Call
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.continuous = true;
-        recognition.onstart = () => document.getElementById('ai-avatar').className = 'listening';
-        recognition.onend = () => document.getElementById('ai-avatar').className = 'speaking';
-        recognition.start();
+        document.getElementById('ai-avatar').classList.add('glow');
+        alert("Danny: 'Hi, I'm Danny. I'm drowning in manual emails. How can you automate my business?'");
     }
 
     async function submitInterview() {
         const payload = {
-            candidateName: "Candidate Name", // In production, add an input field for this
+            candidateName: "Candidate",
             candidateNotes: document.getElementById('notepad').value,
-            transcript: "Mock transcript data..." // Captured from recognition
+            transcript: "Candidate engaged in discovery call."
         };
 
-        await fetch(webhookUrl, {
+        // Submit to n8n
+        await fetch('YOUR_N8N_WEBHOOK_URL', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        alert("Interview Submitted for Evaluation.");
+        alert("Interview submitted. HR will receive your scorecard shortly.");
+        window.location.reload();
     }
 </script>
 </body>
