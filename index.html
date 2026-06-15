@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AZKY Screener</title>
+    <style>
+        body { font-family: sans-serif; background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #1a1a1a; padding: 30px; border-radius: 8px; width: 400px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #333; border: 1px solid #444; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        #status { margin-top: 20px; font-size: 0.9em; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AZKY Screener</h2>
+        <div id="setup">
+            <input type="text" id="name" placeholder="Full name">
+            <input type="text" id="code" placeholder="Interview code">
+            <button onclick="startInterview()">Start Interview</button>
+        </div>
+        <div id="active" style="display:none;">
+            <p>Interview in progress...</p>
+            <button onclick="stopInterview()" style="background: #dc3545;">Terminate Call</button>
+        </div>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        let transcript = [];
+        const webhookUrl = 'https://stitchlabai.space/webhook/interview-submitted';
+
+        recognition.onresult = (event) => {
+            let currentTranscript = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                currentTranscript += event.results[i][0].transcript;
+            }
+            transcript = [currentTranscript]; 
+        };
+
+        function startInterview() {
+            const name = document.getElementById('name').value;
+            if(!name) return alert("Enter name");
+            
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('active').style.display = 'block';
+            recognition.start();
+        }
+
+        async function stopInterview() {
+            recognition.stop();
+            document.getElementById('status').innerText = "Analyzing...";
+
+            const payload = {
+                candidateName: document.getElementById('name').value,
+                candidateNotes: "Candidate completed mock discovery call.",
+                transcript: transcript
+            };
+
+            try {
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                document.getElementById('status').innerText = "Interview submitted! Scorecard will be emailed.";
+            } catch (e) {
+                document.getElementById('status').innerText = "Error submitting: " + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
